@@ -15,7 +15,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - Define `PipelineConfig` dataclass in `config.py` with all settings from design (Groq model, TTS voice, resolution, timeouts)
     - _Requirements: 2.1, 6.1_
 
-  - [ ] 1.2 Implement input validation and data models
+  - [-] 1.2 Implement input validation and data models
     - Create `models.py` with Pydantic models: `PipelineRequest`, `VideoResult`, `HealthStatus`, `FallbackResult`
     - Implement question text validation (1-500 chars, reject empty/whitespace-only)
     - Implement HTML sanitization (strip all HTML tags, preserve text content)
