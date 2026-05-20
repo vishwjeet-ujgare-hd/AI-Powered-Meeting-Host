@@ -26,7 +26,7 @@ class PipelineConfig:
     # Pipeline settings
     max_audio_duration: float = 12.0  # seconds
     cache_size: int = 20  # Cache last 20 responses
-    request_timeout: float = 8.0  # Total pipeline timeout (seconds)
+    request_timeout: float = 45.0  # Total pipeline timeout (seconds) - SadTalker needs ~15-30s
 
     # Connection settings
     websocket_heartbeat_interval: int = 10  # seconds
