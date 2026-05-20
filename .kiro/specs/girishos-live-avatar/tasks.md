@@ -15,7 +15,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - Define `PipelineConfig` dataclass in `config.py` with all settings from design (Groq model, TTS voice, resolution, timeouts)
     - _Requirements: 2.1, 6.1_
 
-  - [-] 1.2 Implement input validation and data models
+  - [x] 1.2 Implement input validation and data models
     - Create `models.py` with Pydantic models: `PipelineRequest`, `VideoResult`, `HealthStatus`, `FallbackResult`
     - Implement question text validation (1-500 chars, reject empty/whitespace-only)
     - Implement HTML sanitization (strip all HTML tags, preserve text content)
@@ -31,7 +31,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - **Validates: Requirements 9.1, 9.2, 9.3, 9.4, 9.5**
 
 - [ ] 2. Backend: Groq LLM Client
-  - [ ] 2.1 Implement the Groq LLM client with GirishOS personality
+  - [x] 2.1 Implement the Groq LLM client with GirishOS personality
     - Create `groq_client.py` with `GroqClient` class
     - Implement `generate_response()` with system prompt defining GirishOS personality (witty, AI-knowledgeable, engaging, Indian English)
     - Limit responses to 150 tokens max (2-3 sentences)
@@ -45,7 +45,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - **Validates: Requirement 2.3**
 
 - [ ] 3. Backend: Edge TTS Engine
-  - [ ] 3.1 Implement the Edge TTS synthesis engine
+  - [x] 3.1 Implement the Edge TTS synthesis engine
     - Create `tts_engine.py` with `EdgeTTSEngine` class
     - Implement `synthesize()` using `edge-tts` library with voice `en-IN-PrabhatNeural` and rate `+10%`
     - Output WAV format at 24000 Hz sample rate
@@ -54,7 +54,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - _Requirements: 2.4, 3.1_
 
 - [ ] 4. Backend: SadTalker Animation Engine
-  - [ ] 4.1 Implement the SadTalker wrapper for video generation
+  - [x] 4.1 Implement the SadTalker wrapper for video generation
     - Create `sadtalker_engine.py` with `SadTalkerEngine` class
     - Implement `generate_video()` that calls SadTalker inference with source image + audio
     - Configure 256x256 resolution, 25 FPS, expression scale 1.2, pose style 0
@@ -64,7 +64,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - _Requirements: 2.5, 3.1, 3.2, 3.3, 3.4_
 
 - [ ] 5. Backend: Response caching
-  - [ ] 5.1 Implement LRU response cache
+  - [x] 5.1 Implement LRU response cache
     - Create cache module with max 20 entries
     - Implement cache key computation from question text (normalized)
     - Implement cache lookup returning cached `VideoResult` within 500ms
@@ -77,7 +77,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.4**
 
 - [ ] 6. Backend: Pipeline orchestrator and fallback logic
-  - [ ] 6.1 Implement the full pipeline orchestrator
+  - [x] 6.1 Implement the full pipeline orchestrator
     - Create `pipeline.py` with `PipelineOrchestrator` class
     - Implement `process_question()` coordinating: cache check → Groq LLM → Edge TTS → SadTalker → serve video
     - Implement request queue (process one at a time to avoid GPU contention)
@@ -85,7 +85,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - Enforce 8-second total pipeline timeout
     - _Requirements: 2.1, 2.2, 2.6_
 
-  - [ ] 6.2 Implement fallback decision tree
+  - [x] 6.2 Implement fallback decision tree
     - Implement `handle_pipeline_failure()` with graceful degradation levels:
       - Level 2: Animation fails → audio-only + static avatar image
       - Level 3: TTS also fails → text-only + pre-generated filler video
@@ -98,7 +98,7 @@ Implementation starts with the backend pipeline (core value), then frontend, the
     - **Validates: Requirements 5.1, 5.2, 5.3, 5.4**
 
 - [ ] 7. Backend: FastAPI server, WebSocket endpoint, and Colab keep-alive
-  - [ ] 7.1 Implement FastAPI WebSocket server
+  - [x] 7.1 Implement FastAPI WebSocket server
     - Create `main.py` with FastAPI app
     - Implement `/ws` WebSocket endpoint handling: question messages, heartbeat, cancel
     - Implement `/health` HTTP endpoint for health checks
@@ -133,8 +133,8 @@ Implementation starts with the backend pipeline (core value), then frontend, the
   - Ensure all backend tests pass, ask the user if questions arise.
   - Verify the pipeline can be run end-to-end in a Colab notebook (manual test)
 
-- [ ] 9. Frontend: Project setup and video player
-  - [ ] 9.1 Initialize Next.js project with dependencies
+- [-] 9. Frontend: Project setup and video player
+  - [x] 9.1 Initialize Next.js project with dependencies
     - Create Next.js 14 app with TypeScript, Tailwind CSS, and framer-motion
     - Set up project structure: `components/`, `hooks/`, `lib/`, `types/`, `public/assets/`
     - Define TypeScript interfaces: `VideoClip`, `PlayerState`, `ClientMessage`, `ServerMessage`, `ConnectionStatus`, `DemoScript`, `DemoStage`, `FallbackClip`
