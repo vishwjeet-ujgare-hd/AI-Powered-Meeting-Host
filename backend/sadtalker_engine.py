@@ -50,9 +50,11 @@ class SadTalkerEngine:
         if not os.path.exists(source_image):
             raise FileNotFoundError(f"Avatar photo not found: {source_image}")
 
-        # Run SadTalker inference
+        # Run SadTalker inference via wrapper (handles numpy patches)
+        wrapper_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sadtalker_wrapper.py")
+        
         cmd = [
-            sys.executable, "inference.py",
+            sys.executable, wrapper_path,
             "--driven_audio", os.path.abspath(audio_path),
             "--source_image", os.path.abspath(source_image),
             "--result_dir", os.path.abspath(output_dir),
@@ -63,13 +65,22 @@ class SadTalkerEngine:
             "--preprocess", "crop",
         ]
 
+        # Set environment to ensure correct numpy is used
+        env = os.environ.copy()
+        # Force Python to find the pip-installed numpy first
+        import site
+        site_packages = site.getsitepackages()[0] if site.getsitepackages() else ""
+        if site_packages:
+            env["PYTHONPATH"] = site_packages + ":" + env.get("PYTHONPATH", "")
+
         try:
             result = subprocess.run(
                 cmd,
                 cwd=self.sadtalker_dir,
                 capture_output=True,
                 text=True,
-                timeout=30,  # 30 second timeout
+                timeout=60,  # 60 second timeout for longer audio
+                env=env,
             )
 
             if result.returncode != 0:
@@ -77,7 +88,7 @@ class SadTalkerEngine:
                 raise RuntimeError(f"SadTalker failed: {result.stderr[-200:]}")
 
         except subprocess.TimeoutExpired:
-            raise RuntimeError("SadTalker timed out (>30s)")
+            raise RuntimeError("SadTalker timed out (>60s)")
 
         # Find the output video
         video_path = self._find_output_video(output_dir)
