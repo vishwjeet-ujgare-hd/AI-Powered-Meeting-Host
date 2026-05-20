@@ -20,10 +20,12 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [currentText, setCurrentText] = useState("");
+  const [isListening, setIsListening] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "wss://localhost:8000";
   const HTTP_URL = BACKEND_URL.replace("wss://", "https://").replace("ws://", "http://");
@@ -159,6 +161,50 @@ export default function Home() {
     setQuestion("");
   };
 
+  // Speech-to-text (mic button)
+  const toggleListening = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition not supported in this browser. Use Chrome.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-IN";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0].transcript)
+        .join("");
+      setQuestion(transcript);
+
+      // Auto-submit when speech ends (final result)
+      if (event.results[0].isFinal) {
+        setIsListening(false);
+      }
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  };
+
   const getStageText = (stage: PipelineStage) => {
     switch (stage) {
       case "llm": return "Thinking...";
@@ -260,12 +306,27 @@ export default function Home() {
       {/* Input */}
       <div className="w-full max-w-4xl">
         <form onSubmit={handleSubmit} className="flex gap-3">
+          <button
+            type="button"
+            onClick={toggleListening}
+            disabled={status !== "connected" || isProcessing}
+            className={`px-4 py-3 rounded-xl font-medium transition-colors ${
+              isListening
+                ? "bg-red-600 text-white animate-pulse"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+            title={isListening ? "Stop listening" : "Speak your question"}
+          >
+            🎤
+          </button>
           <input
             type="text"
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder={
-              status === "connected"
+              isListening
+                ? "Listening... speak now"
+                : status === "connected"
                 ? "Ask GirishOS a question..."
                 : "Connecting to backend..."
             }
@@ -277,7 +338,7 @@ export default function Home() {
             disabled={status !== "connected" || isProcessing || !question.trim()}
             className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isProcessing ? "..." : "Ask"}
+            {isProcessing ? "..." : "Send"}
           </button>
         </form>
       </div>
