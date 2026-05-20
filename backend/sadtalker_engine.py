@@ -88,14 +88,16 @@ class SadTalkerEngine:
 
             # Setup model paths
             checkpoint_dir = os.path.join(self.sadtalker_dir, 'checkpoints')
+            gfpgan_dir = os.path.join(self.sadtalker_dir, 'gfpgan', 'weights')
             sadtalker_paths = {
                 'checkpoint': os.path.join(checkpoint_dir, f'SadTalker_V0.0.2_{self.config.resolution}.safetensors'),
                 'dir_of_BFM_fitting': os.path.join(self.sadtalker_dir, 'src', 'config'),
+                'use_safetensor': True,
             }
 
             # Add mapping model paths
             for f in os.listdir(checkpoint_dir):
-                if 'mapping' in f:
+                if 'mapping' in f and f.endswith('.pth.tar'):
                     sadtalker_paths['mappingnet'] = os.path.join(checkpoint_dir, f)
                     break
 
