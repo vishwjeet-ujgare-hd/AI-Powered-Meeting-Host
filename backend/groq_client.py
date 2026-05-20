@@ -8,11 +8,11 @@ from models import LLMResponse
 
 # Fallback responses when API fails
 FALLBACK_RESPONSES = [
-    "Interesting question! Let me process that... Actually, my AI circuits are a bit busy. Ask me again in a moment!",
-    "Hmm, that's a great one! My neural networks are doing some heavy lifting right now. Try again?",
-    "You know what, even AI needs a coffee break sometimes! Let me get back to you on that.",
-    "That question deserves a thoughtful answer, and right now my thoughts are... buffering!",
-    "Great question! But my AI brain just did a little hiccup. Ask me something else!",
+    "Interesting question! Let me think about that differently.",
+    "My AI circuits are warming up, ask me again!",
+    "Even AI needs a moment sometimes. Try again?",
+    "Buffering... just kidding! Ask me something else.",
+    "Great question! Let me get back to you on that.",
 ]
 
 
@@ -25,13 +25,51 @@ class GroqClient:
         self.client = Groq(api_key=api_key)
         self.history: list[dict] = []
         self._fallback_index = 0
+        self._context = self._load_context()
 
-    async def generate_response(self, question: str, max_tokens: int = 150) -> LLMResponse:
+    def _load_context(self) -> str:
+        """Load meeting context and agenda files."""
+        context_parts = []
+
+        # Load meeting context
+        context_file = os.path.join("context", "meeting_context.md")
+        if not os.path.exists(context_file):
+            context_file = os.path.join("backend", "context", "meeting_context.md")
+        if os.path.exists(context_file):
+            with open(context_file, "r") as f:
+                context_parts.append(f.read())
+
+        # Load agenda
+        agenda_file = os.path.join("context", "agenda.md")
+        if not os.path.exists(agenda_file):
+            agenda_file = os.path.join("backend", "context", "agenda.md")
+        if os.path.exists(agenda_file):
+            with open(agenda_file, "r") as f:
+                context_parts.append(f.read())
+
+        if context_parts:
+            print(f"  📋 Loaded {len(context_parts)} context files")
+            return "\n\n---\n\n".join(context_parts)
+        return ""
+
+    def reload_context(self):
+        """Reload context files (call when agenda changes)."""
+        self._context = self._load_context()
+
+    async def generate_response(self, question: str, max_tokens: int = None) -> LLMResponse:
         """Generate a response as GirishOS personality."""
+        if max_tokens is None:
+            max_tokens = self.config.max_response_tokens
+
         start_time = time.time()
 
+        # Build system prompt with context
+        system_prompt = self.config.personality_prompt
+        if self._context:
+            system_prompt += f"\n\n--- MEETING CONTEXT ---\n{self._context}"
+
         messages = [
-            {"role": "system", "content": self.config.personality_prompt},
+            {"role": "system", "content": system_prompt},
         ]
 
         # Add conversation history (last 5 exchanges)
@@ -64,7 +102,6 @@ class GroqClient:
 
         except Exception as e:
             print(f"⚠️ Groq API error: {e}")
-            # Return fallback
             fallback = FALLBACK_RESPONSES[self._fallback_index % len(FALLBACK_RESPONSES)]
             self._fallback_index += 1
             latency_ms = (time.time() - start_time) * 1000
