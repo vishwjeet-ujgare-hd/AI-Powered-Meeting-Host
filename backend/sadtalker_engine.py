@@ -39,7 +39,6 @@ class SadTalkerEngine:
         source_image = self.config.source_image
         # Try to find the photo
         if not os.path.exists(source_image):
-            # Search in assets/photos
             photo_dir = "assets/photos"
             if os.path.exists(photo_dir):
                 for f in os.listdir(photo_dir):
@@ -50,37 +49,54 @@ class SadTalkerEngine:
         if not os.path.exists(source_image):
             raise FileNotFoundError(f"Avatar photo not found: {source_image}")
 
-        # Run SadTalker inference via wrapper (handles numpy patches)
-        wrapper_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sadtalker_wrapper.py")
-        
-        cmd = [
-            sys.executable, wrapper_path,
-            "--driven_audio", os.path.abspath(audio_path),
-            "--source_image", os.path.abspath(source_image),
-            "--result_dir", os.path.abspath(output_dir),
-            "--size", str(self.config.resolution),
-            "--expression_scale", str(self.config.expression_scale),
-            "--pose_style", str(self.config.pose_style),
-            "--still",  # Minimal head movement for stability
-            "--preprocess", "crop",
-        ]
+        # Build a Python command that patches numpy then runs inference
+        abs_audio = os.path.abspath(audio_path)
+        abs_image = os.path.abspath(source_image)
+        abs_output = os.path.abspath(output_dir)
 
-        # Set environment to ensure correct numpy is used
-        env = os.environ.copy()
-        # Force Python to find the pip-installed numpy first
-        import site
-        site_packages = site.getsitepackages()[0] if site.getsitepackages() else ""
-        if site_packages:
-            env["PYTHONPATH"] = site_packages + ":" + env.get("PYTHONPATH", "")
+        python_code = f'''
+import sys, os, types, warnings
+warnings.filterwarnings("ignore")
+
+# Patch numpy
+import numpy as np
+if not hasattr(np, "float"): np.float = np.float64
+if not hasattr(np, "int"): np.int = np.int64
+if not hasattr(np, "object"): np.object = object
+if not hasattr(np, "bool"): np.bool = np.bool_
+if not hasattr(np, "complex"): np.complex = np.complex128
+
+# Patch torchvision
+try:
+    import torchvision.transforms.functional as F
+    fake = types.ModuleType("torchvision.transforms.functional_tensor")
+    fake.rgb_to_grayscale = F.rgb_to_grayscale
+    sys.modules["torchvision.transforms.functional_tensor"] = fake
+except: pass
+
+# Run SadTalker
+sys.argv = ["inference.py",
+    "--driven_audio", "{abs_audio}",
+    "--source_image", "{abs_image}",
+    "--result_dir", "{abs_output}",
+    "--size", "{self.config.resolution}",
+    "--expression_scale", "{self.config.expression_scale}",
+    "--pose_style", "{self.config.pose_style}",
+    "--still",
+    "--preprocess", "crop"
+]
+
+os.chdir("{self.sadtalker_dir}")
+sys.path.insert(0, "{self.sadtalker_dir}")
+exec(open("inference.py").read())
+'''
 
         try:
             result = subprocess.run(
-                cmd,
-                cwd=self.sadtalker_dir,
+                [sys.executable, "-c", python_code],
                 capture_output=True,
                 text=True,
-                timeout=60,  # 60 second timeout for longer audio
-                env=env,
+                timeout=120,  # 120 seconds for first run (model loading)
             )
 
             if result.returncode != 0:
@@ -88,7 +104,7 @@ class SadTalkerEngine:
                 raise RuntimeError(f"SadTalker failed: {result.stderr[-200:]}")
 
         except subprocess.TimeoutExpired:
-            raise RuntimeError("SadTalker timed out (>60s)")
+            raise RuntimeError("SadTalker timed out (>120s)")
 
         # Find the output video
         video_path = self._find_output_video(output_dir)
@@ -98,8 +114,8 @@ class SadTalkerEngine:
         generation_time = time.time() - start_time
 
         return VideoResult(
-            video_url=video_path,  # Will be converted to URL by server
-            duration=0,  # Will be determined by video file
+            video_url=video_path,
+            duration=0,
             text_response="",
             generation_time=generation_time,
         )
