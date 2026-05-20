@@ -1,0 +1,83 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.production
+.env.*.local
+
+# API Keys - NEVER commit these
+*.key
+*.pem
+secrets.json
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Generated video/audio files (large, regeneratable)
+*.mp4
+*.wav
+*.mp3
+*.avi
+generated_clips/
+temp_videos/
+temp_audio/
+
+# SadTalker models (too large for git, downloaded on Colab)
+SadTalker/
+checkpoints/
+gfpgan/
+
+# Colab artifacts
+*.ipynb_checkpoints/
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Kiro specs (optional - remove this line if you want specs in repo)
+# .kiro/
+
+# Photos - keep the README but ignore actual photos
+# (photos will be uploaded directly to Colab)
+assets/photos/*.png
+assets/photos/*.jpg
+assets/photos/*.jpeg
+!assets/photos/README.md
+
+# Logs
+*.log
+logs/
+
+# Coverage
+coverage/
+.coverage
+htmlcov/
+
+# Vercel
+.vercel
+
+# ngrok
+ngrok.yml
