@@ -122,13 +122,15 @@ async def websocket_endpoint(websocket: WebSocket):
                     })
                 else:
                     # Convert local path to URL
-                    video_filename = os.path.basename(result.video_url)
                     video_rel_path = os.path.relpath(result.video_url, pipeline._video_serve_dir)
+                    # URL-encode the path to handle special chars like ##
+                    from urllib.parse import quote
+                    video_url_path = "/video/" + quote(video_rel_path, safe="/")
 
                     await websocket.send_json({
                         "type": "video_ready",
                         "questionId": question_id,
-                        "url": f"/video/{video_rel_path}",
+                        "url": video_url_path,
                         "duration": result.duration,
                         "text": result.text_response,
                         "generationTime": result.generation_time,
